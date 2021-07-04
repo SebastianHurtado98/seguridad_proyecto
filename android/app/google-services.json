@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "326317682775",
+    "project_id": "semillas-285122",
+    "storage_bucket": "semillas-285122.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:326317682775:android:ea4f0f4185fa7c6d46b312",
+        "android_client_info": {
+          "package_name": "com.shurtado.esend"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "326317682775-utse5ddocu8076vovpbbb6gn9ss80r90.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-nHQ8QNkiF_Z6UMwaj8ax9mQB_pZX0Nw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "326317682775-utse5ddocu8076vovpbbb6gn9ss80r90.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
