@@ -22,16 +22,14 @@ class SendPage extends StatefulWidget {
 class _SendPageState extends State<SendPage> {
   String contact_username = "Elegir contacto";
   String pdf_name = "Choose file";
-  String message_encryptedAESkey = "wrongencryptedAESkey";
-  String message_iv = "wrongiv";
-  String message_encrypted_pdf = "wrongencrypted_pdf";
+  String pdf_cache_location = "location";
 
   List<String> get_contacts() {
     /* hacer funcionar el async
     final prefs = await SharedPreferences.getInstance();
     final contacts = prefs.getStringList('contacts') ?? <String>[];
     */
-    return ['Elegir contacto', 'fmejia', 'shurtado'];
+    return ['Elegir contacto', 'fmejia', 'shurtado98'];
   }
 
   Future<bool> choose_pdf() async {
@@ -40,18 +38,8 @@ class _SendPageState extends State<SendPage> {
 
     if (result != null) {
       PlatformFile file = result.files.first;
-      //delete
-      print(file.path);
-      Uint8List pdf = file.bytes as Uint8List;
-      Uint8List source = Uint8List.fromList(
-          [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
-      final AES_key = source.toString();
       final directory = await getApplicationDocumentsDirectory();
       final path = directory.path;
-      String pathPrivate = '$path/assets/private.pem';
-      String pathPublic = '$path/assets/public.pem';
-
-      String friendsPemKey = "notyet";
 
       CollectionReference _collectionRef =
           FirebaseFirestore.instance.collection('usuarios');
@@ -61,6 +49,11 @@ class _SendPageState extends State<SendPage> {
 
       // Existe una mejor manera de hacer esto:
       // Deberìa salir de local y no de la base de datos
+
+      /*
+
+      String friendsPemKey = "notyet";
+
 
       final allData = querySnapshot.docs
           .map((e) => {
@@ -76,31 +69,14 @@ class _SendPageState extends State<SendPage> {
       final RsaKeyHelper helper = new RsaKeyHelper();
       RSAPrivateKey privKey = helper.parsePrivateKeyFromPem(privPem);
       RSAPublicKey friendsKey = helper.parsePublicKeyFromPem(friendsPemKey);
-
-      final encryptedAESkey = encrypt(AES_key, friendsKey);
-      var crypt = AesCrypt();
-
-      Uint8List key = source;
-      Uint8List iv = source;
-
-      crypt.setPassword('my cool password');
-      crypt.setOverwriteMode(AesCryptOwMode.on);
-      crypt.aesSetParams(key, iv, AesMode.cbc);
-      Uint8List encrypted_pdf = crypt.aesEncrypt(source);
-      /* Conectar a cloud storage.
-      String path_temp = '$path/assets/temp.bin.aes';
-      crypt.encryptDataToFileSync(pdf, path_temp);
-      final encryptedPdf = await File(path_temp).readAsString(encoding: utf8);
-      print(base64.decode(encryptedPdf));
       */
-      print("PDF SENDING");
-      print(source);
+
+      print("LOCATION SELECTED");
+      print(file.path);
 
       setState(() {
         pdf_name = file.name;
-        message_encryptedAESkey = encryptedAESkey.codeUnits.toString();
-        message_iv = iv.toString();
-        message_encrypted_pdf = encrypted_pdf.toString();
+        pdf_cache_location = file.path as String;
       });
       return true;
     } else {
@@ -114,30 +90,33 @@ class _SendPageState extends State<SendPage> {
     crypt.setOverwriteMode(AesCryptOwMode.on);
 
     var output = crypt.encryptFileSync(
-        '/data/user/0/com.shurtado.esend/cache/file_picker/sample.pdf',
-        appDocDirectory.path + '/enc_file.pdf.aes');
+        pdf_cache_location, appDocDirectory.path + '/' + pdf_name + '.aes');
 
-    File sent_file = File(appDocDirectory.path + '/enc_file.pdf.aes');
+    File sent_file = File(appDocDirectory.path + '/' + pdf_name + '.aes');
 
     FirebaseStorage storage = FirebaseStorage.instance;
-    Reference ref = storage.ref().child("enc_file.pdf.aes");
+    Reference ref = storage.ref().child(pdf_name + '.aes');
     UploadTask uploadTask = ref.putFile(sent_file);
     uploadTask.then((res) {
       print(res.ref.getDownloadURL());
     });
 
     print(output);
-    var output2 = crypt.decryptFileSync(
-        appDocDirectory.path + '/enc_file.pdf.aes',
-        appDocDirectory.path + '/chanze.pdf');
-    print(output2);
+
+    String pathPrivate = appDocDirectory.path + '/assets/private.pem';
+    String pathPublic = appDocDirectory.path + '/assets/public.pem';
+
+    final privPem = await File(pathPrivate).readAsString();
+    final friendsPemKey = await File(pathPublic).readAsString();
+
+    final RsaKeyHelper helper = new RsaKeyHelper();
+    RSAPrivateKey privKey = helper.parsePrivateKeyFromPem(privPem);
+    RSAPublicKey friendsKey = helper.parsePublicKeyFromPem(friendsPemKey);
 
     FirebaseFirestore.instance.collection('documentos').add({
       'receptor': contact_username,
-      'name': pdf_name,
-      'ekey': message_encryptedAESkey,
-      'iv': message_iv,
-      'document': message_encrypted_pdf
+      'pdf_name': pdf_name,
+      'aes_key': encrypt("password", friendsKey)
     });
   }
 

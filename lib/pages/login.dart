@@ -2,11 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_application_2/pages/received.dart';
 import 'package:flutter_application_2/pages/register.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:aes_crypt/aes_crypt.dart';
-
-import 'dart:io';
 
 class LoginPage extends StatefulWidget {
   static String id = 'login_page';
@@ -24,11 +19,6 @@ class _LoginPageState extends State<LoginPage> {
     final saved_password = prefs.getString('password') ?? "invalid";
     //prefs.setStringList("contacts", ["fajardo", "kevin", "pancho"]);
 
-    final directory = await getApplicationDocumentsDirectory();
-    final path = directory.path;
-    String pathPublic = '$path/assets/public.pem';
-    String my_key = await File(pathPublic).readAsString();
-
     if ((saved_username == "invalid") || (saved_password == "invalid")) {
       print("Go to register");
     } else if ((email == saved_username) && (password == saved_password)) {
@@ -37,26 +27,6 @@ class _LoginPageState extends State<LoginPage> {
     } else {
       print("Failed");
     }
-
-    // FOR TESTING PURPOSES
-
-    FirebaseStorage storage = FirebaseStorage.instance;
-
-    Directory appDocDir = await getApplicationDocumentsDirectory();
-    File downloadToFile = File('${appDocDir.path}/enc_file2.pdf.aes');
-
-    await storage.ref('enc_file.pdf.aes').writeToFile(downloadToFile);
-
-    print("saved file");
-
-    var crypt = AesCrypt('password');
-    crypt.setOverwriteMode(AesCryptOwMode.on);
-
-    //var output = crypt.decryptFileSync('${appDocDir.path}/enc_file2.pdf.aes',
-    //    '${appDocDir.path}/dec_file.pdf');
-    var output = crypt.decryptFileSync('${appDocDir.path}/enc_file2.pdf.aes',
-        '/storage/emulated/0/Download/dec_file.pdf');
-    print(output);
   }
 
   @override

@@ -11,6 +11,8 @@ import 'package:rsa_encrypt/rsa_encrypt.dart';
 import 'package:pointycastle/api.dart' as crypto;
 import 'package:aes_crypt/aes_crypt.dart';
 import 'dart:typed_data';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:aes_crypt/aes_crypt.dart';
 
 List<int> _get_source(String str) {
   List<dynamic> init_list = jsonDecode(str);
@@ -23,18 +25,12 @@ List<int> _get_source(String str) {
 
 class Document {
   const Document(
-      {required this.name,
-      required this.receptor,
-      required this.ekey,
-      required this.iv,
-      required this.document});
-  final String name;
+      {required this.pdf_name, required this.receptor, required this.aes_key});
+  final String pdf_name;
   final String receptor;
-  final String ekey;
-  final String iv;
-  final String document;
+  final String aes_key;
   String get_list_text() {
-    return this.name + " - " + this.receptor;
+    return this.pdf_name + " - " + this.receptor;
   }
 }
 
@@ -72,7 +68,7 @@ class DocumentListItem extends StatelessWidget {
       },
       leading: CircleAvatar(
         backgroundColor: _getColor(context),
-        child: Text(document.name[0]),
+        child: Text(document.pdf_name[0]),
       ),
       title: Text(document.get_list_text(), style: _getTextStyle(context)),
     );
@@ -111,35 +107,26 @@ class _DocumentListState extends State<DocumentList> {
     final privatePem = await File(pathPrivate).readAsString();
 
     RSAPrivateKey privateKey = helper.parsePrivateKeyFromPem(privatePem);
-    //String AESKey = decrypt(document.ekey, privateKey);
-    Uint8List source = Uint8List.fromList(
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
-    print("Decoding AES Key");
-    //String encryptedAESKey = String.fromCharCodes(_get_source(document.ekey));
-    //String AESKey = decrypt(encryptedAESKey, privateKey);
-    print(source);
+    String aesKey = decrypt(document.aes_key, privateKey);
+    print("AES KEY");
+    print(aesKey);
 
-    /*/
-    var crypt = AesCrypt();
-    Uint8List key = Uint8List.fromList(_get_source(AESKey));
-    Uint8List iv = Uint8List.fromList(_get_source(document.iv));
-    crypt.aesSetParams(key, iv, AesMode.cbc);
-    Uint8List encryptedData =
-        Uint8List.fromList(_get_source(document.document));
-    Uint8List decryptedData = crypt.aesDecrypt(encryptedData);
-    */
-    print("PDF RECEIVING");
-    print(source);
+    FirebaseStorage storage = FirebaseStorage.instance;
 
-    // Se necesita de otro paquete para usar strings como encrypted!!
-    // https://pub.dev/packages/rsa_encrypt
-    // Parece que esta opcion es màs versatil. Y el AES?
-    // Para el caso de AES, tampoco hay mucha versatilidad con los paquetes de envio.
-    // Es decir, necesitamos otro paquete para usar:
-    // el pdf encriptado como string, key como string, iv como string.
-    // https://pub.dev/packages/aes_crypt
-    // para la presentaciòn final tendremos que resumir bien lo que hemos usado
-    // y como se podria mejorar + por que los paquetes de envio no mandan texto plano.
+    Directory appDocDir = await getApplicationDocumentsDirectory();
+    File downloadToFile = File(appDocDir.path + document.pdf_name + '.aes');
+
+    await storage.ref(document.pdf_name + '.aes').writeToFile(downloadToFile);
+
+    print("saved file");
+
+    var crypt = AesCrypt(aesKey);
+    crypt.setOverwriteMode(AesCryptOwMode.on);
+
+    var output = crypt.decryptFileSync(
+        appDocDir.path + document.pdf_name + '.aes',
+        '/storage/emulated/0/Download/' + 'esend_' + document.pdf_name);
+    print(output);
   }
 
   @override
@@ -193,11 +180,9 @@ class _ReceivedPageState extends State<ReceivedPage> {
     // Get data from docs and convert map to List
     final allData = querySnapshot.docs
         .map((e) => new Document(
-              name: (e.data() as dynamic)['name'],
+              pdf_name: (e.data() as dynamic)['pdf_name'],
               receptor: (e.data() as dynamic)['receptor'],
-              ekey: (e.data() as dynamic)['ekey'],
-              document: (e.data() as dynamic)['document'],
-              iv: (e.data() as dynamic)['iv'],
+              aes_key: (e.data() as dynamic)['aes_key'],
             ))
         .where((element) => element.receptor == saved_username)
         .toList();
