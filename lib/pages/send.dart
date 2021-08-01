@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pointycastle/asymmetric/api.dart';
 import 'package:flutter_application_2/pages/drawer.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:typed_data';
 import 'package:aes_crypt/aes_crypt.dart';
 
@@ -39,6 +40,8 @@ class _SendPageState extends State<SendPage> {
 
     if (result != null) {
       PlatformFile file = result.files.first;
+      //delete
+      print(file.path);
       Uint8List pdf = file.bytes as Uint8List;
       Uint8List source = Uint8List.fromList(
           [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
@@ -106,6 +109,29 @@ class _SendPageState extends State<SendPage> {
   }
 
   send_message() async {
+    Directory appDocDirectory = await getApplicationDocumentsDirectory();
+    var crypt = AesCrypt('password');
+    crypt.setOverwriteMode(AesCryptOwMode.on);
+
+    var output = crypt.encryptFileSync(
+        '/data/user/0/com.shurtado.esend/cache/file_picker/sample.pdf',
+        appDocDirectory.path + '/enc_file.pdf.aes');
+
+    File sent_file = File(appDocDirectory.path + '/enc_file.pdf.aes');
+
+    FirebaseStorage storage = FirebaseStorage.instance;
+    Reference ref = storage.ref().child("enc_file.pdf.aes");
+    UploadTask uploadTask = ref.putFile(sent_file);
+    uploadTask.then((res) {
+      print(res.ref.getDownloadURL());
+    });
+
+    print(output);
+    var output2 = crypt.decryptFileSync(
+        appDocDirectory.path + '/enc_file.pdf.aes',
+        appDocDirectory.path + '/chanze.pdf');
+    print(output2);
+
     FirebaseFirestore.instance.collection('documentos').add({
       'receptor': contact_username,
       'name': pdf_name,
