@@ -104,7 +104,8 @@ class _SendPageState extends State<SendPage> {
     print(output);
 
     String pathPrivate = appDocDirectory.path + '/assets/private.pem';
-    String pathPublic = appDocDirectory.path + '/assets/public.pem';
+    String pathPublic =
+        appDocDirectory.path + '/assets/' + contact_username + '.pem';
 
     final privPem = await File(pathPrivate).readAsString();
     final friendsPemKey = await File(pathPublic).readAsString();

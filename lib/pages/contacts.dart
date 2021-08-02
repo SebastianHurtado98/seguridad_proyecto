@@ -3,6 +3,7 @@ import 'package:flutter_application_2/pages/drawer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:qrscan/qrscan.dart' as scanner;
 import 'dart:io';
 
@@ -10,11 +11,24 @@ class ContactsPage extends StatelessWidget {
   static String id = 'contacts_page';
 
   Future<void> saveContact() async {
-    //Comprobar que esto funciona y guardar (como testeo en emulator??)
-    String cameraScanResult = (await scanner.scan()) as String;
+    await Permission.camera.request();
+    String cameraScanResult = await scanner.scan() as String;
     var data = cameraScanResult.split("#esend#");
     String contact_username = data[0];
     String contact_key = data[1];
+    final directory = await getApplicationDocumentsDirectory();
+    final path = directory.path;
+    String pathPublic = '$path/assets/' + contact_username + '.pem';
+
+    bool pathPublicExists = await File(pathPublic).exists();
+
+    if (pathPublicExists) {
+      File(pathPublic).writeAsString(contact_key);
+    } else {
+      new File(pathPublic).create(recursive: true).then((File publicFile) {
+        publicFile.writeAsString(contact_key);
+      });
+    }
   }
 
   Future<String> getData() async {

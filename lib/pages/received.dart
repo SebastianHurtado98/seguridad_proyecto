@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_2/pages/drawer.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_application_2/pages/pdf_viewer.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -114,7 +115,11 @@ class _DocumentListState extends State<DocumentList> {
     FirebaseStorage storage = FirebaseStorage.instance;
 
     Directory appDocDir = await getApplicationDocumentsDirectory();
-    File downloadToFile = File(appDocDir.path + document.pdf_name + '.aes');
+    File downloadToFile =
+        File(appDocDir.path + "/" + document.pdf_name + '.aes');
+
+    print("path of downloaded");
+    print(downloadToFile.path);
 
     await storage.ref(document.pdf_name + '.aes').writeToFile(downloadToFile);
 
@@ -124,9 +129,13 @@ class _DocumentListState extends State<DocumentList> {
     crypt.setOverwriteMode(AesCryptOwMode.on);
 
     var output = crypt.decryptFileSync(
-        appDocDir.path + document.pdf_name + '.aes',
-        '/storage/emulated/0/Download/' + 'esend_' + document.pdf_name);
+        appDocDir.path + '/' + document.pdf_name + '.aes',
+        appDocDir.path + '/esend_' + document.pdf_name);
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setString(
+        'file_location', appDocDir.path + '/esend_' + document.pdf_name);
     print(output);
+    // Guardar el output en local!!!
   }
 
   @override
@@ -153,6 +162,7 @@ class _DocumentListState extends State<DocumentList> {
               child: ElevatedButton.icon(
                   onPressed: () {
                     _downloadList.forEach((d) => _decryptDocument(d));
+                    Navigator.pushNamed(context, PdfViewerPage.id);
                   },
                   icon: Icon(Icons.download),
                   label: Text("Download")))
